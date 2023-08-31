@@ -20,30 +20,44 @@ ARG EXTRA_BUILD_ARG
 RUN uname -a
 
 # Packages required to build ISPC and Clang.
-# Adding this repository is needed for Ubuntu 16.04 to install python3.6.
-RUN apt-get -y update && apt-get --no-install-recommends install -y software-properties-common && add-apt-repository ppa:deadsnakes/ppa && \
-    apt-get -y update && apt-get --no-install-recommends install -y wget build-essential gcc g++ git python3.6 ncurses-dev libtinfo-dev libtbb-dev && \
+RUN apt-get -y update && apt-get --no-install-recommends install -y software-properties-common && \
+    apt-get -y upgrade && apt-get --no-install-recommends install -y wget build-essential git ncurses-dev libtinfo-dev libtbb-dev && \
     rm -rf /var/lib/apt/lists/*
 
-# ISPC and LLVM starting 16.0 build in C++17 mode and will fail without modern libstdc++
+# ISPC and LLVM starting 16.0 build in C++17 mode and will fail without modern libstdc++ and modern compiler (gcc>=7).
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test -y && apt-get -y update && \
-    apt-get --no-install-recommends install -y libstdc++-9-dev && \
+    apt-get --no-install-recommends install -y libstdc++-9-dev gcc-7 g++-7 && \
     rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 10 && \
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 10 && \
+    update-alternatives --install /usr/bin/cc cc /usr/bin/gcc 30 && \
+    update-alternatives --set cc /usr/bin/gcc && \
+    update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++ 30 && \
+    update-alternatives --set c++ /usr/bin/g++
 
 # Download and install required version of cmake (3.20) for ISPC build
 RUN wget -q --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 5 https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.sh && mkdir /opt/cmake && sh cmake-3.20.5-linux-x86_64.sh --prefix=/opt/cmake --skip-license && \
     ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake && rm cmake-3.20.5-linux-x86_64.sh
 
 # If you are behind a proxy, you need to configure git.
-RUN if [ -v "$http_proxy" ]; then git config --global --add http.proxy "$http_proxy"; fi
+RUN if [ -v http_proxy ]; then git config --global --add http.proxy "$http_proxy"; fi
 
 WORKDIR /usr/local/src
 
+# Zlib is required to build Python3.8.
+RUN apt-get -y update && apt-get -y install zlib1g-dev zlib1g && rm -rf /var/lib/apt/lists/*
+RUN wget -q --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 5 https://www.python.org/ftp/python/3.8.18/Python-3.8.18.tgz && tar xf Python-3.8.18.tgz && cd Pyth* && ./configure && make -j"$(nproc)" && make install && rm -rf /usr/local/src/*
+
+# git >= 2.7.0 is required to use --shallow-submodules.
+RUN apt-get -y update && apt-get -y install libssl-dev libcurl4-openssl-dev libexpat1-dev gettext && rm -rf /var/lib/apt/lists/*
+RUN wget -q --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 5 https://github.com/git/git/archive/refs/tags/v2.12.0.tar.gz && tar xf v2.12.0.tar.gz && cd git* && make prefix=/usr/local -j"$(nproc)" && make prefix=/usr/local install && rm -rf /usr/local/src/*
+
 # Fork ispc on github and clone *your* fork.
-RUN git clone https://github.com/$REPO.git ispc
+RUN git clone --depth=1 https://github.com/$REPO.git ispc && cd ispc && git checkout $SHA
 
 # This is home for Clang builds
-RUN mkdir /usr/local/src/llvm
+RUN mkdir -p /usr/local/src/llvm
 
 ENV ISPC_HOME=/usr/local/src/ispc
 ENV LLVM_HOME=/usr/local/src/llvm
@@ -53,7 +67,6 @@ ENV LLVM_HOME=/usr/local/src/llvm
 # extract it, add to path and set SDE_HOME.
 
 WORKDIR /usr/local/src/ispc
-RUN git checkout $SHA
 
 # Build Clang with all required patches.
 # Pass required LLVM_VERSION with --build-arg LLVM_VERSION=<version>.
@@ -61,14 +74,14 @@ RUN git checkout $SHA
 # i.e. if clang was built by gcc, you may need to use gcc to build ispc (i.e. run "make gcc"),
 # or better do clang selfbuild and use it for ispc build as well (i.e. just "make").
 # "rm" are just to keep docker image small.
-RUN python3.6 ./alloy.py -b --version="$LLVM_VERSION" --selfbuild-phase1 --verbose "$EXTRA_BUILD_ARG" && \
+RUN python3.8 ./alloy.py -b --version="$LLVM_VERSION" --selfbuild-phase1 --verbose "$EXTRA_BUILD_ARG" && \
     rm -rf "$LLVM_HOME"/build-"$LLVM_VERSION"_temp
 
 FROM llvm_build_step1 AS llvm_build_step2
 ARG LLVM_VERSION
 ARG EXTRA_BUILD_ARG
 
-RUN python3.6 ./alloy.py -b --version="$LLVM_VERSION" --selfbuild-phase2 --verbose "$EXTRA_BUILD_ARG" && \
+RUN python3.8 ./alloy.py -b --version="$LLVM_VERSION" --selfbuild-phase2 --verbose "$EXTRA_BUILD_ARG" && \
     rm -rf "$LLVM_HOME"/build-"$LLVM_VERSION" "$LLVM_HOME"/llvm-"$LLVM_VERSION" "$LLVM_HOME"/bin-"$LLVM_VERSION"_temp
 ENV PATH=$LLVM_HOME/bin-$LLVM_VERSION/bin:$PATH
 
