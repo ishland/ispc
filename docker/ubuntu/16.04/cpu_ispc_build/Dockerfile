@@ -37,8 +37,8 @@ RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 10 && \
     update-alternatives --set c++ /usr/bin/g++
 
 # Download and install required version of cmake (3.20) for ISPC build
-RUN wget -q --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 5 https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.sh && mkdir /opt/cmake && sh cmake-3.20.5-linux-x86_64.sh --prefix=/opt/cmake --skip-license && \
-    ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake && rm cmake-3.20.5-linux-x86_64.sh
+RUN wget -q --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 5 https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.sh && \
+    sh cmake-3.20.5-linux-x86_64.sh --prefix=/usr/local --skip-license && rm cmake-3.20.5-linux-x86_64.sh
 
 # If you are behind a proxy, you need to configure git.
 RUN if [ -v http_proxy ]; then git config --global --add http.proxy "$http_proxy"; fi

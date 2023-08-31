@@ -35,8 +35,8 @@ RUN yum install -y libstdc++-static && \
     yum clean -y all
 
 # Download and install required version of CMake. CMake 3.20 is required starting from LLVM 16.0.
-RUN wget -q --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 5 https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.sh && mkdir /opt/cmake && sh cmake-3.20.5-linux-x86_64.sh --prefix=/opt/cmake --skip-license && \
-    ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake && rm cmake-3.20.5-linux-x86_64.sh
+RUN wget -q --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 5 https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.sh && \
+    sh cmake-3.20.5-linux-x86_64.sh --prefix=/usr/local --skip-license && rm cmake-3.20.5-linux-x86_64.sh
 
 # If you are behind a proxy, you need to configure git.
 RUN if [ -v "$http_proxy" ]; then git config --global --add http.proxy "$http_proxy"; fi

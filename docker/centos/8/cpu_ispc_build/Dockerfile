@@ -35,8 +35,8 @@ RUN ./configure --with-termlib --with-libtool --with-libtool-opts=-static --enab
 
 # Download and install required version of CMake. CMake 3.20 is required starting from LLVM 16.0.
 RUN if [[ $(uname -m) =~ "x86" ]]; then export CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-x86_64.sh"; else export CMAKE_URL="https://github.com/Kitware/CMake/releases/download/v3.20.5/cmake-3.20.5-linux-aarch64.sh"; fi && \
-    wget -q --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 5 $CMAKE_URL && mkdir /opt/cmake && sh cmake-*.sh --prefix=/opt/cmake --skip-license && \
-    ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake && rm -rf cmake-*.sh
+    wget -q --retry-connrefused --waitretry=5 --read-timeout=20 --timeout=15 -t 5 $CMAKE_URL && \
+    sh cmake-*.sh --prefix=/usr/local --skip-license && rm -rf cmake-*.sh
 
 # If you are behind a proxy, you need to configure git.
 RUN if [ -v "$http_proxy" ]; then git config --global --add http.proxy "$http_proxy"; fi
