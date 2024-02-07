@@ -2348,8 +2348,13 @@ llvm::Value *FunctionEmitContext::SwitchBoolSize(llvm::Value *value, llvm::Type 
             TruncInst(value, toType, name.isTriviallyEmpty() ? (llvm::Twine(value->getName()) + "_switchBool") : name);
     } else if (g->target->getDataLayout()->getTypeSizeInBits(fromType) <
                g->target->getDataLayout()->getTypeSizeInBits(toType)) {
-        newBool =
-            SExtInst(value, toType, name.isTriviallyEmpty() ? (llvm::Twine(value->getName()) + "_switchBool") : name);
+        if (toType == LLVMTypes::BoolVectorStorageType || toType == LLVMTypes::BoolStorageType) {
+            newBool = ZExtInst(value, toType,
+                               name.isTriviallyEmpty() ?  (llvm::Twine(value->getName()) + "_switchBool") : name);
+        } else {
+            newBool = SExtInst(value, toType,
+                               name.isTriviallyEmpty() ?  (llvm::Twine(value->getName()) + "_switchBool") : name);
+        }
     }
 
     return newBool;

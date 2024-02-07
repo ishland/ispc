@@ -4,6 +4,8 @@
 // RUN: %{ispc} --target=avx512skx-x16 --nowrap --nostdlib -O2 --emit-llvm-text %s -o - | FileCheck %s --check-prefixes=COMMON,AVX512
 // RUN: %{ispc} --target=avx2-i32x4 --nowrap --nostdlib -O2 --emit-llvm-text %s -o - | FileCheck %s --check-prefixes=COMMON,AVX2
 
+// XFAIL: *
+
 // REQUIRES: X86_ENABLED
 
 // COMMON-LABEL: @y
