@@ -279,6 +279,7 @@ jobs:
             --preset os \
             -DINSTALL_WITH_XE_DEPS=ON \
             -DISPC_INCLUDE_BENCHMARKS=ON \
+            -DMINGW_DIR=$(pwd)/llvm-mingw \
             -DPREBUILT_STAGE2_PATH=${GITHUB_WORKSPACE}/bin-${LLVM_VERSION} \
             -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/ispc-xe
         cmake --build build
